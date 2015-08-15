@@ -8,9 +8,36 @@
         window.onload = function(){
             new Game();
         };
+
+        var canvas, ctx, game;
+
+        var fps  = 60,
+                step = 1/fps,
+                dt   = 0,
+                now, last = timestamp();
+
+        function timestamp() {
+            if (window.performance && window.performance.now)
+                return window.performance.now();
+            else
+                return new Date().getTime();
+        }
+
+        function frame() {
+            now = timestamp();
+            dt = dt + Math.min(1, (now - last) / 1000);
+            while(dt > step) {
+                dt = dt - step;
+                game.update(step);
+            }
+            game.render(ctx, dt);
+            last = now;
+            requestAnimationFrame(frame, canvas);
+        }
     </script>
+    <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-    <canvas id="game" width="320" height="320"></canvas>
+    <canvas id="game" width="568" height="320"></canvas>
 </body>
 </html>
