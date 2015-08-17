@@ -68,7 +68,7 @@ class Player{
 
         if(this.isDrawing){
             this.addNewPosition();
-            fieldManager.addNewField(this.currentRect);
+            fieldManager.addNewPoly(this.currentRect);
             this.resetCurrentPosition();
 
             if(this.x < this.size + 1){
@@ -184,16 +184,69 @@ class FieldManager{
         );
         this.color = '#888';
 
-        this.currentRect = [];
+        this.polyArray = [];
     }
 
-    addNewField(array){
-        console.log('addNewField: ', array);
+    addNewPoly(array){
+        for(var i = 0; i < array.length; i++){
+            var moduloX = array[i].x % gridSize;
+            var moduloY = array[i].y % gridSize;
+            if(moduloX){
+                array[i].x -= moduloX;
+            }
+
+            if(moduloY){
+                array[i].y -= moduloY;
+            }
+
+            if(array[i].x == gridSize){
+                array[i].x = 0;
+            } else if(array[i].x == canvas.clientWidth - gridSize*2 || array[i].x == canvas.clientWidth - gridSize*3){
+                array[i].x = canvas.clientWidth;
+            }
+
+
+            if(array[i].y == gridSize){
+                array[i].y = 0;
+            } else if(array[i].y == canvas.clientHeight - gridSize*2 || array[i].y == canvas.clientHeight - gridSize*3){
+                array[i].y = canvas.clientHeight;
+            }
+
+        }
+
+        if((array[0].x == 0 && array[array.length - 1].y == 0) || (array[0].y == 0 && array[array.length - 1].x == 0)){
+            array.push({ x: 0, y: 0 });
+        } else if((array[0].x == canvas.clientWidth && array[array.length - 1].y == 0) || (array[0].y == 0 && array[array.length - 1].x == canvas.clientWidth)){
+            array.push({ x: canvas.clientWidth, y: 0 });
+        } else if((array[0].x == canvas.clientWidth && array[array.length - 1].y == canvas.clientHeight) || (array[0].y == canvas.clientHeight && array[array.length - 1].x == canvas.clientWidth)){
+            array.push({ x: canvas.clientWidth, y: canvas.clientHeight });
+        } if((array[0].x == 0 && array[array.length - 1].y == canvas.clientHeight) || (array[0].y == canvas.clientHeight && array[array.length - 1].x == 0)){
+            array.push({ x: 0, y: canvas.clientHeight });
+        }
+
+        this.polyArray.push(array);
+
+        console.log('addNewPoly: ' , array);
+
     }
 
     render(ctx){
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = '#0f0';
 
+        for(var i = 0; i < this.polyArray.length; i++){
+            ctx.beginPath();
+            for(var j = 0; j < this.polyArray[i].length; j++){
+                if(j == 0){
+                    ctx.moveTo(this.polyArray[i][j].x, this.polyArray[i][j].y);
+                } else {
+                    ctx.lineTo(this.polyArray[i][j].x, this.polyArray[i][j].y);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.fillStyle = this.color;
         for(let i = 0; i < this.rectangles.length; i++){
             let x = this.rectangles[i][0];
             let y = this.rectangles[i][1];
@@ -202,6 +255,7 @@ class FieldManager{
 
             ctx.fillRect(x, y, width, height);
         }
+
     }
 }
 

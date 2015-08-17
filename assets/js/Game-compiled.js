@@ -92,7 +92,7 @@ var Player = (function () {
 
             if (this.isDrawing) {
                 this.addNewPosition();
-                fieldManager.addNewField(this.currentRect);
+                fieldManager.addNewPoly(this.currentRect);
                 this.resetCurrentPosition();
 
                 if (this.x < this.size + 1) {
@@ -209,24 +209,74 @@ var FieldManager = (function () {
         this.rectangles.push([0, 0, canvas.clientWidth, gridSize], [canvas.clientWidth - gridSize, 0, gridSize, canvas.clientHeight], [0, canvas.clientHeight - gridSize, canvas.clientWidth, gridSize], [0, 0, gridSize, canvas.clientHeight]);
         this.color = '#888';
 
-        this.currentRect = [];
+        this.polyArray = [];
     }
 
     _createClass(FieldManager, [{
-        key: 'addNewField',
-        value: function addNewField(array) {
-            console.log('addNewField: ', array);
+        key: 'addNewPoly',
+        value: function addNewPoly(array) {
+            for (var i = 0; i < array.length; i++) {
+                var moduloX = array[i].x % gridSize;
+                var moduloY = array[i].y % gridSize;
+                if (moduloX) {
+                    array[i].x -= moduloX;
+                }
+
+                if (moduloY) {
+                    array[i].y -= moduloY;
+                }
+
+                if (array[i].x == gridSize) {
+                    array[i].x = 0;
+                } else if (array[i].x == canvas.clientWidth - gridSize * 2 || array[i].x == canvas.clientWidth - gridSize * 3) {
+                    array[i].x = canvas.clientWidth;
+                }
+
+                if (array[i].y == gridSize) {
+                    array[i].y = 0;
+                } else if (array[i].y == canvas.clientHeight - gridSize * 2 || array[i].y == canvas.clientHeight - gridSize * 3) {
+                    array[i].y = canvas.clientHeight;
+                }
+            }
+
+            if (array[0].x == 0 && array[array.length - 1].y == 0 || array[0].y == 0 && array[array.length - 1].x == 0) {
+                array.push({ x: 0, y: 0 });
+            } else if (array[0].x == canvas.clientWidth && array[array.length - 1].y == 0 || array[0].y == 0 && array[array.length - 1].x == canvas.clientWidth) {
+                array.push({ x: canvas.clientWidth, y: 0 });
+            } else if (array[0].x == canvas.clientWidth && array[array.length - 1].y == canvas.clientHeight || array[0].y == canvas.clientHeight && array[array.length - 1].x == canvas.clientWidth) {
+                array.push({ x: canvas.clientWidth, y: canvas.clientHeight });
+            }if (array[0].x == 0 && array[array.length - 1].y == canvas.clientHeight || array[0].y == canvas.clientHeight && array[array.length - 1].x == 0) {
+                array.push({ x: 0, y: canvas.clientHeight });
+            }
+
+            this.polyArray.push(array);
+
+            console.log('addNewPoly: ', array);
         }
     }, {
         key: 'render',
         value: function render(ctx) {
-            ctx.fillStyle = this.color;
+            ctx.fillStyle = '#0f0';
 
-            for (var i = 0; i < this.rectangles.length; i++) {
-                var x = this.rectangles[i][0];
-                var y = this.rectangles[i][1];
-                var width = this.rectangles[i][2];
-                var height = this.rectangles[i][3];
+            for (var i = 0; i < this.polyArray.length; i++) {
+                ctx.beginPath();
+                for (var j = 0; j < this.polyArray[i].length; j++) {
+                    if (j == 0) {
+                        ctx.moveTo(this.polyArray[i][j].x, this.polyArray[i][j].y);
+                    } else {
+                        ctx.lineTo(this.polyArray[i][j].x, this.polyArray[i][j].y);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.fillStyle = this.color;
+            for (var _i = 0; _i < this.rectangles.length; _i++) {
+                var x = this.rectangles[_i][0];
+                var y = this.rectangles[_i][1];
+                var width = this.rectangles[_i][2];
+                var height = this.rectangles[_i][3];
 
                 ctx.fillRect(x, y, width, height);
             }
