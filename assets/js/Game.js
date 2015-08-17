@@ -1,4 +1,6 @@
 var gridSize = 6;
+var enemies = [];
+var fieldManager;
 
 class Game {
     constructor(){
@@ -6,8 +8,9 @@ class Game {
         canvas = document.getElementById('game');
         ctx = canvas.getContext('2d');
 
-        this.player = new Player(canvas.clientWidth / 2, canvas.clientHeight / 2);
-        this.fieldManager = new FieldManager();
+        this.player = new Player(0, 0);
+        fieldManager = new FieldManager();
+        enemies.push(new Enemy(20, 50));
 
         frame(); // start the first frame
     }
@@ -15,13 +18,17 @@ class Game {
     render(ctx, dt){
         //console.log('game render dt: ', dt);
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-        this.fieldManager.render(ctx);
+        fieldManager.render(ctx);
         this.player.render(ctx);
+
+        for(var i = 0; i < enemies.length; i++){
+            enemies[i].render(ctx);
+        }
     }
 
     update(dt){
         //console.log('game update: ', dt);
-        this.player.update(dt, this.fieldManager);
+        this.player.update(dt);
     }
 }
 
@@ -41,7 +48,18 @@ class Player{
         this.isDrawing = false;
         this.isMoving = false;
 
+        this.currentRect = [];
+
         document.addEventListener('keydown', (ev) => { return this.keyDown(ev.keyCode);  }, false);
+    }
+
+    addNewPosition(){
+        this.currentRect.push({ x: this.x, y: this.y });
+        //console.log('currentRect: ', this.currentRect);
+    }
+
+    resetCurrentPosition(){
+        this.currentRect = [];
     }
 
     stop(){
@@ -49,6 +67,10 @@ class Player{
         this.direction.y = 0;
 
         if(this.isDrawing){
+            this.addNewPosition();
+            fieldManager.addNewField(this.currentRect);
+            this.resetCurrentPosition();
+
             if(this.x < this.size + 1){
                 this.x = 0;
             } else if(this.x > canvas.clientWidth - this.size - gridSize - 1){
@@ -67,6 +89,10 @@ class Player{
     move(dir){
         this.isMoving = true;
         this.direction = dir;
+
+        if(this.isDrawing){
+            this.addNewPosition();
+        }
     }
 
     keyDown(keyCode) {
@@ -92,9 +118,13 @@ class Player{
             ctx.fillStyle = this.color;
         }
         ctx.fillRect(this.x, this.y, this.size, this.size);
+
+        for(var i = 0; i < this.currentRect.length; i++){
+            ctx.fillRect(this.currentRect[i].x, this.currentRect[i].y, gridSize, gridSize);
+        }
     }
 
-    update(dt, fieldManager){
+    update(dt){
         this.x += this.speed * this.direction.x;
         this.y += this.speed * this.direction.y;
 
@@ -123,7 +153,7 @@ class Player{
         }
 
         if(isOvelap){
-            console.log('player overlap!');
+            //console.log('player overlap!');
 
             if(this.isDrawing){
                 this.stop();
@@ -132,7 +162,10 @@ class Player{
         } else {
             if(this.isMoving){
                 this.isDrawing = true;
-                console.log('isDrawing!');
+                if(this.currentRect.length == 0){
+                    this.addNewPosition();
+                }
+                //console.log('isDrawing!');
             }
         }
     }
@@ -150,6 +183,12 @@ class FieldManager{
             [0, 0, gridSize, canvas.clientHeight]
         );
         this.color = '#888';
+
+        this.currentRect = [];
+    }
+
+    addNewField(array){
+        console.log('addNewField: ', array);
     }
 
     render(ctx){
@@ -163,5 +202,22 @@ class FieldManager{
 
             ctx.fillRect(x, y, width, height);
         }
+    }
+}
+
+class Enemy{
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+    }
+
+    render(ctx){
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, gridSize/2, 0, 2 * Math.PI, false);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        //ctx.lineWidth = 1;
+        //ctx.strokeStyle = '#003300';
+        //ctx.stroke();
     }
 }
