@@ -16,9 +16,9 @@ var Game = (function () {
         canvas = document.getElementById('game');
         ctx = canvas.getContext('2d');
 
-        this.player = new Player(0, 0);
+        this.player = new Player(0, canvas.clientHeight - gridSize);
         fieldManager = new FieldManager();
-        enemies.push(new Enemy(20, 50));
+        enemies.push(new Enemy(50, 50));
 
         frame(); // start the first frame
     }
@@ -40,6 +40,10 @@ var Game = (function () {
         value: function update(dt) {
             //console.log('game update: ', dt);
             this.player.update(dt);
+
+            for (var i = 0; i < enemies.length; i++) {
+                enemies[i].update(dt);
+            }
         }
     }]);
 
@@ -281,6 +285,41 @@ var FieldManager = (function () {
                 ctx.fillRect(x, y, width, height);
             }
         }
+    }, {
+        key: 'getColor',
+        value: function getColor(x, y) {
+            var colorData = ctx.getImageData(x, y, 1, 1);
+            return colorData.data;
+        }
+    }, {
+        key: 'checkCollision',
+        value: function checkCollision(object) {
+            var nextColorData = this.getColor(object.x + object.size * object.dirVector.x, object.y + object.size * object.dirVector.y);
+            //console.log('colorData: ', colorData);
+            if (nextColorData[1] == 255 || nextColorData[1] == 136) {
+                var collisionDirection = [];
+                var nextHorizontalColor = this.getColor(object.x + object.size * object.dirVector.x, object.y);
+                var nextVerticalColor = this.getColor(object.x, object.y + object.size * object.dirVector.y);
+
+                if (object.dirVector.x > 0 && nextHorizontalColor[1] == 136 || nextHorizontalColor[1] == 255) {
+                    collisionDirection.push('RIGHT');
+                } else if (nextHorizontalColor[1] == 136 || nextHorizontalColor[1] == 255) {
+                    collisionDirection.push('LEFT');
+                }
+
+                if (object.dirVector.y > 0 && nextVerticalColor[1] == 136 || nextVerticalColor[1] == 255) {
+                    collisionDirection.push('BOTTOM');
+                } else if (nextVerticalColor[1] == 136 || nextVerticalColor[1] == 255) {
+                    collisionDirection.push('TOP');
+                }
+
+                console.log('collisionDirection: ', collisionDirection);
+
+                return collisionDirection;
+            }
+
+            return false;
+        }
     }]);
 
     return FieldManager;
@@ -292,18 +331,39 @@ var Enemy = (function () {
 
         this.x = x;
         this.y = y;
+        this.size = 3;
+        this.dirVector = {
+            x: 1,
+            y: -1
+        };
     }
 
     _createClass(Enemy, [{
         key: 'render',
         value: function render(ctx) {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, gridSize / 2, 0, 2 * Math.PI, false);
+            ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
             ctx.fillStyle = 'blue';
             ctx.fill();
-            //ctx.lineWidth = 1;
-            //ctx.strokeStyle = '#003300';
-            //ctx.stroke();
+        }
+    }, {
+        key: 'update',
+        value: function update(dt) {
+            this.x += this.dirVector.x;
+            this.y += this.dirVector.y;
+
+            var collisionArray = fieldManager.checkCollision(this);
+            if (collisionArray) {
+                for (var i = 0; i < collisionArray.length; i++) {
+                    if (collisionArray[i] == 'LEFT' || collisionArray[i] == 'RIGHT') {
+                        this.dirVector.x *= -1;
+                    }
+
+                    if (collisionArray[i] == 'TOP' || collisionArray[i] == 'BOTTOM') {
+                        this.dirVector.y *= -1;
+                    }
+                }
+            }
         }
     }]);
 
